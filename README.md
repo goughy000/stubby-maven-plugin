@@ -16,7 +16,7 @@ Default values for configuration shown
   <plugin>
     <groupId>com.testingsyndicate</groupId>
     <artifactId>stubby-maven-plugin</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <executions>
       <execution>
         <goals>

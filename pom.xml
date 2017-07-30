@@ -44,20 +44,9 @@
             <version>3.5</version>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-            <version>9.4.6.v20170531</version>
-        </dependency>
-        <dependency>
             <groupId>io.github.azagniotov</groupId>
             <artifactId>stubby4j</artifactId>
-            <version>5.0.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.eclipse.jetty</groupId>
-                    <artifactId>jetty-server</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>5.0.1</version>
         </dependency>
 
         <!-- test dependencies -->

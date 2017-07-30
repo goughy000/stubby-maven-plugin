@@ -9,17 +9,20 @@ abstract class ConfigurationMojo extends AbstractMojo {
 
     static final String MANAGER_KEY = "manager";
 
-    @Parameter(property = "configFile", defaultValue = "target/stubs.yaml")
+    @Parameter(property = "configFile", defaultValue = "src/test/resources/stubs.yaml")
     private File configFile;
 
     @Parameter(property = "httpPort", defaultValue = "8882")
     private Integer httpPort;
 
-    @Parameter(property = "httpsPort", defaultValue = "7443")
+    @Parameter(property = "httpsPort")
     private Integer httpsPort;
 
-    @Parameter(property = "adminPort", defaultValue = "8889")
+    @Parameter(property = "adminPort")
     private Integer adminPort;
+
+    @Parameter(property = "mute", defaultValue = "true")
+    private Boolean mute;
 
     File getConfigFile() {
         return configFile;
@@ -35,6 +38,10 @@ abstract class ConfigurationMojo extends AbstractMojo {
 
     Integer getAdminPort() {
         return adminPort;
+    }
+
+    Boolean getMute() {
+        return mute;
     }
 
 }

@@ -1,16 +1,31 @@
 package com.testingsyndicate.maven.plugin.stubby;
 
-import io.github.azagniotov.stubby4j.client.StubbyClient;
+import io.github.azagniotov.stubby4j.cli.CommandLineInterpreter;
+import io.github.azagniotov.stubby4j.server.StubbyManager;
+import io.github.azagniotov.stubby4j.server.StubbyManagerFactory;
+import io.github.azagniotov.stubby4j.stubs.StubHttpLifecycle;
+import io.github.azagniotov.stubby4j.yaml.YAMLParser;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 class ServerManager {
+
+    private static final ExecutorService EXECUTOR_SERVICE = Executors.newFixedThreadPool(1);
 
     private final File configurationFile;
     private final Integer httpPort;
     private final Integer httpsPort;
     private final Integer adminPort;
-    private final StubbyClient client;
+    private final Boolean mute;
+    private final StubbyManagerFactory factory;
+    private StubbyManager manager;
 
     private boolean isStarted = false;
 
@@ -19,12 +34,20 @@ class ServerManager {
         this.httpPort = builder.httpPort;
         this.httpsPort = builder.httpsPort;
         this.adminPort = builder.adminPort;
-        this.client = null == builder.client ? new StubbyClient() : builder.client;
+        this.mute = builder.mute;
+        this.factory = null == builder.factory ? new StubbyManagerFactory() : builder.factory;
     }
 
     void start() {
         try {
-            client.startJetty(httpPort, httpsPort, adminPort, "localhost", configurationFile.getPath());
+            Future<List<StubHttpLifecycle>> future = EXECUTOR_SERVICE.submit(new Callable<List<StubHttpLifecycle>>() {
+                public List<StubHttpLifecycle> call() throws Exception {
+                    return (new YAMLParser()).parse(configurationFile.getParent(), configurationFile);
+                }
+            });
+
+            manager = factory.construct(configurationFile, constructArguments(), future);
+            manager.startJetty();
             isStarted = true;
         } catch (Exception ex) {
             throw new RuntimeException("Failed to start stubby", ex);
@@ -36,7 +59,7 @@ class ServerManager {
             throw new IllegalStateException("Cannot stop stubby when it has not been started");
         }
         try {
-            client.stopJetty();
+            manager.stopJetty();
             isStarted = false;
         } catch (Exception ex) {
             throw new RuntimeException("Failed to stop stubby", ex);
@@ -48,11 +71,36 @@ class ServerManager {
             start();
         }
         try {
-            client.joinJetty();
+            manager.joinJetty();
             isStarted = false;
         } catch (Exception ex) {
             throw new RuntimeException("Could not join stubby", ex);
         }
+    }
+
+    private Map<String, String> constructArguments() {
+        Map<String, String> args = new HashMap<String, String>();
+        args.put(CommandLineInterpreter.OPTION_ADDRESS, "localhost");
+        args.put(CommandLineInterpreter.OPTION_CONFIG, configurationFile.getPath());
+        args.put(CommandLineInterpreter.OPTION_CLIENTPORT, httpPort.toString());
+
+        if (null != httpsPort) {
+            args.put(CommandLineInterpreter.OPTION_TLSPORT, httpsPort.toString());
+        } else {
+            args.put(CommandLineInterpreter.OPTION_DISABLE_SSL, "");
+        }
+
+        if (null != adminPort) {
+            args.put(CommandLineInterpreter.OPTION_ADMINPORT, adminPort.toString());
+        } else {
+            args.put(CommandLineInterpreter.OPTION_DISABLE_ADMIN, "");
+        }
+
+        if (null != mute && mute) {
+            args.put(CommandLineInterpreter.OPTION_MUTE, "");
+        }
+
+        return args;
     }
 
     File getConfigurationFile() {
@@ -71,8 +119,12 @@ class ServerManager {
         return adminPort;
     }
 
-    StubbyClient getClient() {
-        return client;
+    Boolean getMute() {
+        return mute;
+    }
+
+    StubbyManagerFactory getFactory() {
+        return factory;
     }
 
     static Builder newBuilder() {
@@ -84,7 +136,8 @@ class ServerManager {
         private Integer httpPort;
         private Integer httpsPort;
         private Integer adminPort;
-        private StubbyClient client;
+        private Boolean mute;
+        private StubbyManagerFactory factory;
 
         private Builder() { }
 
@@ -108,8 +161,13 @@ class ServerManager {
             return this;
         }
 
-        Builder client(StubbyClient client) {
-            this.client = client;
+        Builder mute(Boolean mute) {
+            this.mute = mute;
+            return this;
+        }
+
+        Builder factory(StubbyManagerFactory factory) {
+            this.factory = factory;
             return this;
         }
 

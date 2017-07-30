@@ -1,36 +1,55 @@
 package com.testingsyndicate.maven.plugin.stubby;
 
-import io.github.azagniotov.stubby4j.client.StubbyClient;
+import io.github.azagniotov.stubby4j.server.StubbyManager;
+import io.github.azagniotov.stubby4j.server.StubbyManagerFactory;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.File;
+import java.util.Map;
+import java.util.concurrent.Future;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.AssertionsForClassTypes.fail;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+@RunWith(MockitoJUnitRunner.class)
 public class ServerManagerTest {
 
     private ServerManager sut;
-    private File mockConfiguration;
-    private StubbyClient mockClient;
+
+    @Mock
+    public File mockConfiguration;
+
+    @Mock
+    public StubbyManagerFactory mockFactory;
+
+    @Mock
+    public StubbyManager mockManager;
+
+    @Captor
+    public ArgumentCaptor<Map<String, String>> commandLineCaptor;
 
     @Before
-    public void setup() {
-        mockConfiguration = mock(File.class);
-        mockClient = mock(StubbyClient.class);
-
+    public void setup() throws Exception {
         when(mockConfiguration.getPath()).thenReturn("/filepath");
+        when(mockFactory.construct(any(File.class), ArgumentMatchers.<String, String>anyMap(), any(Future.class)))
+        .thenReturn(mockManager);
 
         sut = ServerManager.newBuilder()
                 .adminPort(8888)
                 .httpPort(8887)
                 .httpsPort(8886)
                 .configurationFile(mockConfiguration)
-                .client(mockClient)
+                .mute(true)
+                .factory(mockFactory)
                 .build();
     }
 
@@ -42,7 +61,8 @@ public class ServerManagerTest {
                 .configurationFile(file)
                 .httpPort(8080)
                 .httpsPort(8443)
-                .adminPort(8081);
+                .adminPort(8081)
+                .mute(true);
 
         // when
         ServerManager actual = builder.build();
@@ -52,7 +72,8 @@ public class ServerManagerTest {
         assertThat(actual.getHttpPort()).isEqualTo(8080);
         assertThat(actual.getHttpsPort()).isEqualTo(8443);
         assertThat(actual.getAdminPort()).isEqualTo(8081);
-        assertThat(actual.getClient()).isNotNull();
+        assertThat(actual.getMute()).isEqualTo(true);
+        assertThat(actual.getFactory()).isNotNull();
     }
 
     @Test
@@ -63,14 +84,47 @@ public class ServerManagerTest {
         sut.start();
 
         // then
-        verify(mockClient).startJetty(8887, 8886, 8888, "localhost", "/filepath");
+        verify(mockFactory).construct(eq(mockConfiguration), commandLineCaptor.capture(), any(Future.class));
+        assertThat(commandLineCaptor.getValue())
+                .isNotEmpty()
+                .contains(entry("data", "/filepath"))
+                .contains(entry("location", "localhost"))
+                .contains(entry("stubs", "8887"))
+                .contains(entry("tls", "8886"))
+                .contains(entry("admin", "8888"))
+                .contains(entry("mute", ""));
+
+        verify(mockManager).startJetty();
+    }
+
+    @Test
+    public void disablesPortalsWhenNotConfigured() throws Exception {
+        // given
+        sut = ServerManager.newBuilder()
+                .configurationFile(mockConfiguration)
+                .factory(mockFactory)
+                .httpPort(7000)
+                .build();
+
+        // when
+        sut.start();
+
+        // then
+        verify(mockFactory).construct(eq(mockConfiguration), commandLineCaptor.capture(), any(Future.class));
+        assertThat(commandLineCaptor.getValue())
+                .isNotEmpty()
+                .contains(entry("data", "/filepath"))
+                .contains(entry("location", "localhost"))
+                .contains(entry("stubs", "7000"))
+                .contains(entry("disable_ssl", ""))
+                .contains(entry("disable_admin_portal", ""));
     }
 
     @Test
     public void throwsRuntimeWhenCannotStart() throws Exception {
         // given
         Exception error = new Exception("Hello");
-        doThrow(error).when(mockClient).startJetty(anyInt(), anyInt(), anyInt(), anyString(), anyString());
+        doThrow(error).when(mockManager).startJetty();
 
         // when
         try {
@@ -93,14 +147,14 @@ public class ServerManagerTest {
         sut.stop();
 
         // then
-        verify(mockClient).stopJetty();
+        verify(mockManager).stopJetty();
     }
 
     @Test
     public void throwsRuntimeWhenCannotStop() throws Exception {
         // given
         Exception error = new Exception("Boom!");
-        doThrow(error).when(mockClient).stopJetty();
+        doThrow(error).when(mockManager).stopJetty();
         sut.start();
 
         // when
@@ -139,8 +193,8 @@ public class ServerManagerTest {
         sut.join();
 
         // then
-        verify(mockClient).startJetty(anyInt(), anyInt(), anyInt(), anyString(), anyString());
-        verify(mockClient).joinJetty();
+        verify(mockManager).startJetty();
+        verify(mockManager).joinJetty();
     }
 
     @Test
@@ -152,15 +206,15 @@ public class ServerManagerTest {
         sut.join();
 
         // then
-        verify(mockClient, times(1)).startJetty(anyInt(), anyInt(), anyInt(), anyString(), anyString());
-        verify(mockClient).joinJetty();
+        verify(mockManager, times(1)).startJetty();
+        verify(mockManager).joinJetty();
     }
 
     @Test
     public void throwsRuntimeWhenCannotJoin() throws Exception {
         // given
         Exception error = new Exception("broken");
-        doThrow(error).when(mockClient).joinJetty();
+        doThrow(error).when(mockManager).joinJetty();
 
         // when
         try {

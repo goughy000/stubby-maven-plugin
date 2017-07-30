@@ -24,10 +24,11 @@ Default values for configuration shown
           <goal>stop</goal>
         </goals>
         <configuration>
-          <configFile>target/stubs.yaml</configFile>
+          <configFile>src/test/resources/stubs.yaml</configFile>
           <httpPort>8882</httpPort>
-          <httpsPort>7443</httpsPort>
-          <adminPort>8889</adminPort>
+          <mute>true</mute>
+          <httpsPort />
+          <adminPort />
         </configuration>
       </execution>
     </executions>

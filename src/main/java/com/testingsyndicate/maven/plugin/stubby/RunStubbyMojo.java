@@ -15,6 +15,7 @@ public class RunStubbyMojo extends ConfigurationMojo {
                 .httpPort(getHttpPort())
                 .httpsPort(getHttpsPort())
                 .adminPort(getAdminPort())
+                .mute(getMute())
                 .build()
                 .join();
         getLog().info("Stopping Stubby");

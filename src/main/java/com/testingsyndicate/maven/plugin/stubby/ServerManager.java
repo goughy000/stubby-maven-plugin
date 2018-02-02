@@ -24,6 +24,7 @@ class ServerManager {
     private final Integer httpsPort;
     private final Integer adminPort;
     private final Boolean mute;
+    private final Boolean debug;
     private final StubbyManagerFactory factory;
     private StubbyManager manager;
 
@@ -35,6 +36,7 @@ class ServerManager {
         this.httpsPort = builder.httpsPort;
         this.adminPort = builder.adminPort;
         this.mute = builder.mute;
+        this.debug = builder.debug;
         this.factory = null == builder.factory ? new StubbyManagerFactory() : builder.factory;
     }
 
@@ -100,6 +102,10 @@ class ServerManager {
             args.put(CommandLineInterpreter.OPTION_MUTE, "");
         }
 
+        if (null != debug && debug) {
+            args.put(CommandLineInterpreter.OPTION_DEBUG, "");
+        }
+
         return args;
     }
 
@@ -123,6 +129,10 @@ class ServerManager {
         return mute;
     }
 
+    Boolean getDebug() {
+        return debug;
+    }
+
     StubbyManagerFactory getFactory() {
         return factory;
     }
@@ -137,6 +147,7 @@ class ServerManager {
         private Integer httpsPort;
         private Integer adminPort;
         private Boolean mute;
+        private Boolean debug;
         private StubbyManagerFactory factory;
 
         private Builder() { }
@@ -163,6 +174,11 @@ class ServerManager {
 
         Builder mute(Boolean mute) {
             this.mute = mute;
+            return this;
+        }
+
+        Builder debug(Boolean debug) {
+            this.debug = debug;
             return this;
         }
 

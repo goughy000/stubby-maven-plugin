@@ -49,6 +49,7 @@ public class ServerManagerTest {
                 .httpsPort(8886)
                 .configurationFile(mockConfiguration)
                 .mute(true)
+                .debug(true)
                 .factory(mockFactory)
                 .build();
     }
@@ -62,7 +63,8 @@ public class ServerManagerTest {
                 .httpPort(8080)
                 .httpsPort(8443)
                 .adminPort(8081)
-                .mute(true);
+                .mute(true)
+                .debug(true);
 
         // when
         ServerManager actual = builder.build();
@@ -73,6 +75,7 @@ public class ServerManagerTest {
         assertThat(actual.getHttpsPort()).isEqualTo(8443);
         assertThat(actual.getAdminPort()).isEqualTo(8081);
         assertThat(actual.getMute()).isEqualTo(true);
+        assertThat(actual.getDebug()).isEqualTo(true);
         assertThat(actual.getFactory()).isNotNull();
     }
 
@@ -92,7 +95,8 @@ public class ServerManagerTest {
                 .contains(entry("stubs", "8887"))
                 .contains(entry("tls", "8886"))
                 .contains(entry("admin", "8888"))
-                .contains(entry("mute", ""));
+                .contains(entry("mute", ""))
+                .contains(entry("debug", ""));
 
         verify(mockManager).startJetty();
     }

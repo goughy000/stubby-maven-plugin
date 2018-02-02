@@ -24,6 +24,9 @@ abstract class ConfigurationMojo extends AbstractMojo {
     @Parameter(property = "mute", defaultValue = "true")
     private Boolean mute;
 
+    @Parameter(property = "debug", defaultValue = "false")
+    private Boolean debug;
+
     File getConfigFile() {
         return configFile;
     }
@@ -42,6 +45,10 @@ abstract class ConfigurationMojo extends AbstractMojo {
 
     Boolean getMute() {
         return mute;
+    }
+
+    Boolean getDebug() {
+        return debug;
     }
 
 }

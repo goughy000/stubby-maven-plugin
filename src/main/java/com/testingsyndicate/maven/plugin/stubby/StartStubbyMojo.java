@@ -16,6 +16,7 @@ public class StartStubbyMojo extends ConfigurationMojo {
                 .httpsPort(getHttpsPort())
                 .adminPort(getAdminPort())
                 .mute(getMute())
+                .debug(getDebug())
                 .build();
 
         getPluginContext().put(MANAGER_KEY, manager);

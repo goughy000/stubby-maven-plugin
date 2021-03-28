@@ -7,18 +7,18 @@ import org.apache.maven.plugins.annotations.Mojo;
 @Mojo(name = "run")
 public class RunStubbyMojo extends ConfigurationMojo {
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        getLog().debug("Starting RunStubbyMojo::execute");
-        getLog().info(String.format("Starting Stubby on port %s", getHttpPort()));
-        ServerManager.newBuilder()
-                .configurationFile(getConfigFile())
-                .httpPort(getHttpPort())
-                .httpsPort(getHttpsPort())
-                .adminPort(getAdminPort())
-                .mute(getMute())
-                .debug(getDebug())
-                .build()
-                .join();
-        getLog().info("Stopping Stubby");
-    }
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    getLog().debug("Starting RunStubbyMojo::execute");
+    getLog().info(String.format("Starting Stubby on port %s", httpPort));
+    ServerManager.newBuilder()
+        .configurationFile(configFile)
+        .httpPort(httpPort)
+        .httpsPort(httpsPort)
+        .adminPort(adminPort)
+        .mute(mute)
+        .debug(debug)
+        .build()
+        .join();
+    getLog().info("Stopping Stubby");
+  }
 }

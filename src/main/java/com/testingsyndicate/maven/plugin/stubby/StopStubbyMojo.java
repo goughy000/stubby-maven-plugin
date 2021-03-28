@@ -7,10 +7,10 @@ import org.apache.maven.plugins.annotations.Mojo;
 
 @Mojo(name = "stop", defaultPhase = LifecyclePhase.POST_INTEGRATION_TEST)
 public class StopStubbyMojo extends ConfigurationMojo {
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        getLog().debug("Starting StopStubbyMojo::execute");
-        ServerManager manager = (ServerManager) getPluginContext().get(MANAGER_KEY);
-        getLog().info("Stopping Stubby");
-        manager.stop();
-    }
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    getLog().debug("Starting StopStubbyMojo::execute");
+    ServerManager manager = (ServerManager) getPluginContext().get(MANAGER_KEY);
+    getLog().info("Stopping Stubby");
+    manager.stop();
+  }
 }

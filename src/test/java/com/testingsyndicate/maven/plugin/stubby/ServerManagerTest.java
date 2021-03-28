@@ -1,8 +1,6 @@
 package com.testingsyndicate.maven.plugin.stubby;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-import static org.assertj.core.api.AssertionsForClassTypes.fail;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import io.github.azagniotov.stubby4j.server.StubbyManager;
@@ -10,30 +8,28 @@ import io.github.azagniotov.stubby4j.server.StubbyManagerFactory;
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.Future;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
-import org.mockito.Captor;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ServerManagerTest {
+class ServerManagerTest {
+
+  private File mockConfiguration;
+  private StubbyManagerFactory mockFactory;
+  private StubbyManager mockManager;
+  private ArgumentCaptor<Map<String, String>> commandLineCaptor;
 
   private ServerManager sut;
 
-  @Mock public File mockConfiguration;
+  @BeforeEach
+  void beforeEach() throws Exception {
+    mockConfiguration = mock(File.class);
+    mockFactory = mock(StubbyManagerFactory.class);
+    mockManager = mock(StubbyManager.class);
 
-  @Mock public StubbyManagerFactory mockFactory;
+    commandLineCaptor = ArgumentCaptor.forClass(Map.class);
 
-  @Mock public StubbyManager mockManager;
-
-  @Captor public ArgumentCaptor<Map<String, String>> commandLineCaptor;
-
-  @Before
-  public void setup() throws Exception {
     when(mockConfiguration.getPath()).thenReturn("/filepath");
     when(mockFactory.construct(
             any(File.class), ArgumentMatchers.<String, String>anyMap(), any(Future.class)))
@@ -52,7 +48,7 @@ public class ServerManagerTest {
   }
 
   @Test
-  public void builderConstructsInstance() {
+  void builderConstructsInstance() {
     // given
     File file = new File("/dev/null");
     ServerManager.Builder builder =
@@ -78,7 +74,7 @@ public class ServerManagerTest {
   }
 
   @Test
-  public void startsStubbyWhenStart() throws Exception {
+  void startsStubbyWhenStart() throws Exception {
     // given
 
     // when
@@ -101,7 +97,7 @@ public class ServerManagerTest {
   }
 
   @Test
-  public void disablesPortalsWhenNotConfigured() throws Exception {
+  void disablesPortalsWhenNotConfigured() throws Exception {
     // given
     sut =
         ServerManager.newBuilder()
@@ -126,23 +122,23 @@ public class ServerManagerTest {
   }
 
   @Test
-  public void throwsRuntimeWhenCannotStart() throws Exception {
+  void throwsRuntimeWhenCannotStart() throws Exception {
     // given
-    Exception error = new Exception("Hello");
-    doThrow(error).when(mockManager).startJetty();
+    Exception cause = new Exception("Hello");
+    doThrow(cause).when(mockManager).startJetty();
 
     // when
-    try {
-      sut.start();
-      fail("Expected RuntimeException");
-    } catch (RuntimeException actual) {
-      // then
-      assertThat(actual).hasMessage("Failed to start stubby").hasCause(error);
-    }
+    Throwable actual = catchThrowable(() -> sut.start());
+
+    // then
+    assertThat(actual)
+        .isExactlyInstanceOf(RuntimeException.class)
+        .hasMessage("Failed to start stubby")
+        .hasCauseReference(cause);
   }
 
   @Test
-  public void stopsStubbyWhenStop() throws Exception {
+  void stopsStubbyWhenStop() throws Exception {
     // given
     sut.start();
 
@@ -154,39 +150,38 @@ public class ServerManagerTest {
   }
 
   @Test
-  public void throwsRuntimeWhenCannotStop() throws Exception {
+  void throwsRuntimeWhenCannotStop() throws Exception {
     // given
-    Exception error = new Exception("Boom!");
-    doThrow(error).when(mockManager).stopJetty();
+    Exception cause = new Exception("Boom!");
+    doThrow(cause).when(mockManager).stopJetty();
     sut.start();
 
     // when
-    try {
-      sut.stop();
-      fail("Expected RuntimeException");
-    } catch (RuntimeException actual) {
-      // then
-      assertThat(actual).hasMessage("Failed to stop stubby").hasCause(error);
-    }
+    Throwable actual = catchThrowable(() -> sut.stop());
+
+    // then
+    assertThat(actual)
+        .isExactlyInstanceOf(RuntimeException.class)
+        .hasMessage("Failed to stop stubby")
+        .hasCauseReference(cause);
   }
 
   @Test
-  public void throwsIllegalStateIfNotStarted() throws Exception {
+  void throwsIllegalStateIfNotStarted() {
     // given
     // not started
 
     // when
-    try {
-      sut.stop();
-      fail("Expected IllegalStateException");
-    } catch (IllegalStateException actual) {
-      // then
-      assertThat(actual).hasMessage("Cannot stop stubby when it has not been started");
-    }
+    Throwable actual = catchThrowable(() -> sut.stop());
+
+    // then
+    assertThat(actual)
+        .isExactlyInstanceOf(IllegalStateException.class)
+        .hasMessage("Cannot stop stubby when it has not been started");
   }
 
   @Test
-  public void startsAndJoinsJettyIfNotStarted() throws Exception {
+  void startsAndJoinsJettyIfNotStarted() throws Exception {
     // given
 
     // when
@@ -198,7 +193,7 @@ public class ServerManagerTest {
   }
 
   @Test
-  public void joinsIfAlreadyStarted() throws Exception {
+  void joinsIfAlreadyStarted() throws Exception {
     // given
     sut.start();
 
@@ -211,17 +206,18 @@ public class ServerManagerTest {
   }
 
   @Test
-  public void throwsRuntimeWhenCannotJoin() throws Exception {
+  void throwsRuntimeWhenCannotJoin() throws Exception {
     // given
-    Exception error = new Exception("broken");
-    doThrow(error).when(mockManager).joinJetty();
+    Exception cause = new Exception("broken");
+    doThrow(cause).when(mockManager).joinJetty();
 
     // when
-    try {
-      sut.join();
-      fail("Expected RuntimeException");
-    } catch (RuntimeException actual) {
-      assertThat(actual).hasMessage("Could not join stubby").hasCause(error);
-    }
+    Throwable actual = catchThrowable(() -> sut.join());
+
+    // then
+    assertThat(actual)
+        .isExactlyInstanceOf(RuntimeException.class)
+        .hasMessage("Could not join stubby")
+        .hasCauseReference(cause);
   }
 }

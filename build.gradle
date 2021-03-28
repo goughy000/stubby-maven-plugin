@@ -1,0 +1,113 @@
+plugins {
+  id 'java-library'
+  id 'maven-publish'
+  id 'signing'
+  id 'io.toolebox.git-versioner' version '1.6.5'
+  id 'com.liferay.maven.plugin.builder' version '1.2.8'
+  id 'com.diffplug.spotless' version '5.11.0'
+}
+
+dependencies {
+  implementation 'org.apache.maven:maven-plugin-api:3.3.9'
+  implementation 'org.apache.maven.plugin-tools:maven-plugin-annotations:3.5'
+  implementation 'io.github.azagniotov:stubby4j:5.0.1'
+
+  testImplementation 'junit:junit:4.12'
+  testImplementation 'org.assertj:assertj-core:3.8.0'
+  testImplementation 'org.mockito:mockito-core:2.8.47'
+}
+
+group 'com.testingsyndicate'
+
+repositories {
+  mavenCentral()
+}
+
+java {
+  withJavadocJar()
+  withSourcesJar()
+}
+
+spotless {
+  java {
+    googleJavaFormat()
+    endWithNewline()
+  }
+  groovyGradle {
+    greclipse()
+    indentWithSpaces(2)
+    endWithNewline()
+  }
+}
+
+versioner {
+  startFrom {
+    major = 1
+    minor = 0
+    patch = 2
+  }
+}
+
+publishing {
+  repositories {
+    maven {
+      url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+      credentials {
+        username = findProperty('publishUsername')
+        password = findProperty('publishPassword')
+      }
+    }
+  }
+  publications {
+    mavenJava(MavenPublication) {
+      from components.java
+      pom {
+        name = 'Stubby Maven Plugin'
+        description = 'A plugin for Stubby'
+        url = 'https://github.com/goughy000/stubby-maven-plugin'
+        packaging = 'maven-plugin'
+        licenses {
+          license {
+            name = 'MIT License'
+            url = 'https://opensource.org/licenses/MIT'
+          }
+        }
+        developers {
+          developer {
+            name = 'Jack Gough'
+            organization = 'Testing Syndicate'
+            organizationUrl = 'https://testingsyndicate.com/'
+          }
+        }
+        scm {
+          connection = 'scm:git:git://github.com/goughy000/stubby-maven-plugin.git'
+          developerConnection = 'scm:git:git://github.com/goughy000/stubby-maven-plugin.git'
+          url = 'https://github.com/goughy000/stubby-maven-plugin.git'
+        }
+      }
+    }
+  }
+}
+
+signing {
+  useInMemoryPgpKeys(decode(findProperty('signingKey')), '')
+  sign publishing.publications.mavenJava
+}
+
+buildPluginDescriptor {
+  goalPrefix = 'stubby'
+  pomGroupId = project.group
+  pomArtifactId = project.name
+}
+
+afterEvaluate {
+  buildPluginDescriptor {
+    pomVersion = project.version
+  }
+}
+
+processResources.dependsOn('buildPluginDescriptor')
+
+def decode(encoded) {
+  new String(Base64.getDecoder().decode(encoded ?: ''))
+}
